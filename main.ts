@@ -1,3 +1,4 @@
+import { FirstView, FIRST_VIEW_TYPE } from 'firstview';
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
 
 // Remember to rename these classes and interfaces!
@@ -15,6 +16,10 @@ export default class MyPlugin extends Plugin {
 
 	async onload() {
 		await this.loadSettings();
+
+
+		this.registerView(FIRST_VIEW_TYPE, (leaf) => new FirstView(leaf))
+		this.activateView()
 
 		// This creates an icon in the left ribbon.
 		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
@@ -67,19 +72,23 @@ export default class MyPlugin extends Plugin {
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new SampleSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			console.log('click', evt);
-		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
 	}
 
 	onunload() {
+		this.app.workspace.detachLeavesOfType(FIRST_VIEW_TYPE);
+	}
 
+	async activateView() {
+		this.app.workspace.detachLeavesOfType(FIRST_VIEW_TYPE);
+	
+		await this.app.workspace.getRightLeaf(false).setViewState({
+			type: FIRST_VIEW_TYPE,
+			active: true,
+		});
+	
+		this.app.workspace.revealLeaf(
+			this.app.workspace.getLeavesOfType(FIRST_VIEW_TYPE)[0]
+		);
 	}
 
 	async loadSettings() {
@@ -97,7 +106,8 @@ class SampleModal extends Modal {
 	}
 
 	onOpen() {
-		const {contentEl} = this;
+		const {contentEl, modalEl} = this;
+		modalEl.addClass('core-modal');
 		contentEl.setText('Woah!');
 	}
 
